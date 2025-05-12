@@ -1,149 +1,117 @@
+import tkinter as tk
+from tkinter import messagebox
 import numpy as np
 from tensorflow.keras.models import load_model
 from ufal.udpipe import Model, Pipeline
+from Kursova import analyze_text
 
 my_model = load_model('model.keras')
-
-def analyze_text(text):
-    processed = pipeline.process(text)
-    word_vectors = []
-
-    lines = processed.split('\n')
-    tokens = [line.split('\t') for line in lines if line.strip() and not line.startswith('#')]
-
-    saw_conjunction = False
-    prev_dep_code = None
-
-    for idx, fields in enumerate(tokens):
-        if len(fields) < 10:
-            continue
-
-        if '-' in fields[0] or '.' in fields[0]:
-            continue
-
-        word_idx = int(fields[0])
-        word = fields[1]
-        lemma = fields[2]
-        upos = fields[3]
-        feats = fields[5]
-        head = int(fields[6])
-        deprel = fields[7]
-
-        case, number, gender = 'N/A', 'N/A', 'N/A'
-        if feats != '_':
-            feat_pairs = feats.split('|')
-            for feat in feat_pairs:
-                if 'Case=' in feat:
-                    case = feat.split('=')[1]
-                if 'Number=' in feat:
-                    number = feat.split('=')[1]
-                if 'Gender=' in feat:
-                    gender = feat.split('=')[1]
-
-        pos_code = POS_MAP.get(upos, 12)
-        case_code = CASE_MAP.get(case, 0)
-        number_code = NUMBER_MAP.get(number, 0)
-        gender_code = GENDER_MAP.get(gender, 0)
-
-
-        if upos == 'CCONJ' and deprel == 'cc':
-            saw_conjunction = True
-
-        if saw_conjunction and deprel == 'conj':
-            if upos == 'VERB':
-                deprel = 'root'
-            elif upos == 'NOUN':
-                if idx < len(tokens) - 1 and tokens[idx + 1][3] == 'VERB':
-                    deprel = 'nsubj'
-                else:
-                    deprel = 'obj'
-
-        dep_code = DEP_MAP.get(deprel, 0)
-
-        has_prev_unknown = 1 if (prev_dep_code == 11 and word_idx > 1) else 0
-
-        vector = [
-            word_idx, pos_code, case_code, number_code, gender_code,
-            head, abs(head - word_idx), len(lemma),
-            has_prev_unknown
-        ]
-        word_vectors.append(vector)
-
-        prev_dep_code = dep_code
-
-    return word_vectors
-
 model_path = "ukrainian-iu-ud-2.5-191206.udpipe"
-model = Model.load(model_path)
+udpipe_model = Model.load(model_path)
+pipeline = Pipeline(udpipe_model, "tokenize", Pipeline.DEFAULT, Pipeline.DEFAULT, "conllu")
 
-pipeline = Pipeline(model, "tokenize", Pipeline.DEFAULT, Pipeline.DEFAULT, "conllu")
+POS_MAP = {'NOUN': 1, 'VERB': 2, 'ADV': 3, 'ADJ': 4, 'PRON': 5, 'ADP': 6, 'CCONJ': 7, 'DET': 8, 'NUM': 9, 'PART': 10, 'PUNCT': 11, 'X': 12}
+CASE_MAP = {'Nom': 1, 'Gen': 2, 'Dat': 3, 'Acc': 4, 'Ins': 5, 'Loc': 6, 'Voc': 7, 'N/A': 0}
+NUMBER_MAP = {'Sing': 1, 'Plur': 2, 'N/A': 0}
+GENDER_MAP = {'Masc': 1, 'Fem': 2, 'Neut': 3, 'N/A': 0}
+DEP_MAP1 = {0: "Підмет", 1: "Присудок", 2: "Обставина", 3: "Означення", 4: "Додаток", 5: "Прийменник", 6: "Пунктуація", 7: "Невідомо"}
 
-POS_MAP = {
-    'NOUN': 1, 'VERB': 2, 'ADV': 3, 'ADJ': 4, 'PRON': 5, 'ADP': 6,
-    'CCONJ': 7, 'DET': 8, 'NUM': 9, 'PART': 10, 'PUNCT': 11, 'X': 12
-}
+def draw_results(words, classes):
+    canvas.delete("all")
+    x, y = 20, 30
+    positions = []
 
-CASE_MAP = {
-    'Nom': 1, 'Gen': 2, 'Dat': 3, 'Acc': 4, 'Ins': 5, 'Loc': 6, 'Voc': 7, 'N/A': 0
-}
+    for word in words:
+        text_id = canvas.create_text(x, y, text=word, anchor="nw", font=("Arial", 16))
+        bbox = canvas.bbox(text_id)
+        positions.append((bbox[0], bbox[2]))
+        x = bbox[2] + 15
 
-NUMBER_MAP = {
-    'Sing': 1, 'Plur': 2, 'N/A': 0
-}
+    for i, (word, cls) in enumerate(zip(words, classes)):
+        start_x, end_x = positions[i]
+        line_y = y + 25
+        style = DEP_MAP1.get(cls)
 
-GENDER_MAP = {
-    'Masc': 1, 'Fem': 2, 'Neut': 3, 'N/A': 0
-}
+        if style == "Прийменник" and i + 1 < len(classes):
+            next_cls = classes[i + 1]
+            if next_cls in (2, 4):
+                style = DEP_MAP1[next_cls]
+            else:
+                continue
 
-DEP_MAP = {
-    'nsubj': 1,
-    'root': 2,
-    'obj': 3,
-    'obl': 4,
-    'nmod': 5,
-    'amod': 6,
-    'advmod:place': 7,
-    'advmod:time': 8,
-    'advmod:manner': 9,
-    'punct': 10,
-    'case': 11,
-    'cc': 12,
-    'conj': 13,
-    'det': 14,
-    'unknown': 0
-}
+        if style == "Підмет":
+            canvas.create_line(start_x, line_y, end_x, line_y)
+        elif style == "Присудок":
+            canvas.create_line(start_x, line_y, end_x, line_y)
+            canvas.create_line(start_x, line_y + 3, end_x, line_y + 3)
+        elif style == "Додаток":
+            for j in range(start_x, end_x, 12):
+                canvas.create_line(j, line_y, j + 6, line_y)
+        elif style == "Обставина":
+            radius = 2
+            step = 14
+            is_dash = True
+            j = start_x
+            while j < end_x:
+                if is_dash:
+                    canvas.create_line(j, line_y, j + 6, line_y)
+                    j += 6
+                else:
+                    dot_x = j + radius
+                    canvas.create_oval(dot_x - radius, line_y - radius, dot_x + radius, line_y + radius,
+                                       fill="black", outline="black")
+                    j += 2 * radius
+                j += step - (6 if is_dash else 2 * radius)
+                is_dash = not is_dash
+        elif style == "Означення":
+            for j in range(start_x, end_x, 8):
+                canvas.create_arc(j, line_y - 3, j + 8, line_y + 3, start=0, extent=180, style=tk.ARC)
 
-DEP_MAP1 = {
-    1: "Підмет",
-    2: "Присудок",
-    3: "Додаток",
-    4: "Обставина",
-    5: "Додаток",
-    6: "Означення",
-    7: "Обставина",
-    8: "Обставина",
-    9: "Обставина",
-    10: "Пунктуація",
-    11: "Прийменник",
-    12: "Союз",
-    13: "Означення",
-    14: "Означення",
-    0: "Невідомо"
-}
+def on_analyze():
+    text = user_entry.get().strip()
 
+    if not text:
+        messagebox.showwarning("Помилка", "Будь ласка, введіть речення.")
+        return
 
+    if any(char.isdigit() for char in text):
+        messagebox.showwarning("Помилка", "Речення не повинно містити цифри.")
+        return
 
-ukrainian_text = "Діти грали на великому майданчику."
+    user_entry.delete(0, tk.END)
 
+    tokens, vectors = analyze_text(text)
+    new_data = np.array(vectors)
+    predictions = my_model.predict(new_data)
+    words = [fields[1] for fields in tokens]
+    classes = [np.argmax(pred) for pred in predictions]
+    draw_results(words, classes)
 
-vectors = analyze_text(ukrainian_text)
+root = tk.Tk()
+root.title("Розбір речення")
+root.geometry("850x350")
+root.configure(bg="#f2f2f2")
 
-new_data = np.array(vectors)
-predictions = my_model.predict(new_data)
+user_entry = tk.Entry(root, width=75, font=("Segoe UI", 14), bd=2, relief="groove", highlightthickness=1)
+user_entry.pack(pady=20, ipady=6)
 
-print("Речення: ",ukrainian_text)
-for i in range(len(predictions)):
-    predicted_class_idx = np.argmax(predictions[i])
-    predicted_class = DEP_MAP1.get(predicted_class_idx)
-    print(f"\nВектор {i + 1}: {new_data[i]}")
-    print(f"Передбачений клас: {predicted_class}")
+style_btn = {"font": ("Segoe UI", 12, "bold"),
+             "bg": "#4285F4",
+             "fg": "white",
+             "activebackground": "#3367D6",
+             "activeforeground": "white",
+             "bd": 0,
+             "padx": 20,
+             "pady": 8,
+             "cursor": "hand2"}
+
+analyze_btn = tk.Button(root, text="Аналізувати", command=on_analyze, **style_btn)
+analyze_btn.pack()
+
+canvas_frame = tk.Frame(root, bg="#e0e0e0", bd=2, relief="groove")
+canvas_frame.pack(pady=20, padx=20, fill="both", expand=True)
+
+canvas = tk.Canvas(canvas_frame, bg="white", height=100, highlightthickness=0)
+canvas.pack(fill="both", expand=True)
+
+root.mainloop()

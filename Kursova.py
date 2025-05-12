@@ -23,24 +23,6 @@ GENDER_MAP = {
     'Masc': 1, 'Fem': 2, 'Neut': 3, 'N/A': 0
 }
 
-DEP_MAP = {
-    'nsubj': 1,
-    'root': 2,
-    'obj': 3,
-    'obl': 4,
-    'nmod': 5,
-    'amod': 6,
-    'advmod:place': 7,
-    'advmod:time': 8,
-    'advmod:manner': 9,
-    'punct': 10,
-    'case': 11,
-    'cc': 12,
-    'conj': 13,
-    'det': 14,
-    'unknown': 0
-}
-
 
 def analyze_text(text):
     processed = pipeline.process(text)
@@ -49,14 +31,8 @@ def analyze_text(text):
     lines = processed.split('\n')
     tokens = [line.split('\t') for line in lines if line.strip() and not line.startswith('#')]
 
-    saw_conjunction = False
-    prev_dep_code = None
-
     for idx, fields in enumerate(tokens):
-        if len(fields) < 10:
-            continue
-
-        if '-' in fields[0] or '.' in fields[0]:
+        if len(fields) < 10 or '-' in fields[0] or '.' in fields[0]:
             continue
 
         word_idx = int(fields[0])
@@ -65,51 +41,24 @@ def analyze_text(text):
         upos = fields[3]
         feats = fields[5]
         head = int(fields[6])
-        deprel = fields[7]
 
         case, number, gender = 'N/A', 'N/A', 'N/A'
         if feats != '_':
             feat_pairs = feats.split('|')
             for feat in feat_pairs:
-                if 'Case=' in feat:
-                    case = feat.split('=')[1]
-                if 'Number=' in feat:
-                    number = feat.split('=')[1]
-                if 'Gender=' in feat:
-                    gender = feat.split('=')[1]
+                if 'Case=' in feat: case = feat.split('=')[1]
+                if 'Number=' in feat: number = feat.split('=')[1]
+                if 'Gender=' in feat: gender = feat.split('=')[1]
 
         pos_code = POS_MAP.get(upos, 12)
         case_code = CASE_MAP.get(case, 0)
         number_code = NUMBER_MAP.get(number, 0)
         gender_code = GENDER_MAP.get(gender, 0)
 
-
-        if upos == 'CCONJ' and deprel == 'cc':
-            saw_conjunction = True
-
-        if saw_conjunction and deprel == 'conj':
-            if upos == 'VERB':
-                deprel = 'root'
-            elif upos == 'NOUN':
-                if idx < len(tokens) - 1 and tokens[idx + 1][3] == 'VERB':
-                    deprel = 'nsubj'
-                else:
-                    deprel = 'obj'
-
-        dep_code = DEP_MAP.get(deprel, 0)
-
-        has_prev_unknown = 1 if (prev_dep_code == 11 and word_idx > 1) else 0
-
-        vector = [
-            word_idx, pos_code, case_code, number_code, gender_code,
-            head, abs(head - word_idx), len(lemma),
-            has_prev_unknown, dep_code
-        ]
+        vector = [word_idx, pos_code, case_code, number_code, gender_code, head, abs(head - word_idx), len(lemma)]
         word_vectors.append(vector)
 
-        prev_dep_code = dep_code
-
-    return word_vectors
+    return tokens, word_vectors
 
 
 def save_to_file(vectors, filename="ukrainian_analysis.txt"):
@@ -122,6 +71,6 @@ def save_to_file(vectors, filename="ukrainian_analysis.txt"):
 with open("text.txt", 'r', encoding='utf-8') as text:
     ukrainian_text = text.read()
 
-vectors = analyze_text(ukrainian_text)
+_, vectors = analyze_text(ukrainian_text)
 save_to_file(vectors)
 print("Анализ сохранён в файл 'ukrainian_analysis.txt'")

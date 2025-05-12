@@ -2,7 +2,6 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = "2"
 
 import numpy as np
-from tensorflow import keras
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.utils import to_categorical
@@ -19,21 +18,26 @@ def load_data(file_path):
 
     return data
 
-data = load_data('ukrainian_analysis.txt')
+def read_y(file_path):
+        with open(file_path, 'r') as file:
+            y = [int(line.strip())-1 for line in file if line.strip()]
+        return y
 
+data = load_data('ukrainian_analysis.txt')
 data = np.array(data)
 
-X = data[:, :-1]
-y = data[:, -1]
+
+X = data
+y = np.array(read_y('celyova_zminna.txt'))
 
 
-y_onehot = to_categorical(y, num_classes=15)
+y_onehot = to_categorical(y, num_classes=8)
 
 
 model = Sequential([
-    Dense(20, activation='relu', input_shape=(9,)),
-    Dense(10, activation='relu'),
-    Dense(15, activation='softmax')
+    Dense(32, activation='relu', input_shape=(8,)),
+    Dense(16, activation='relu'),
+    Dense(8, activation='softmax')
 ])
 
 model.compile(optimizer='adam',
@@ -41,7 +45,7 @@ model.compile(optimizer='adam',
 
 history = model.fit(X,
                     y_onehot,
-                    epochs=100,
+                    epochs=400,
                     batch_size=32,
                     verbose=1)
 
