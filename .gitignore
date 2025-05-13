@@ -1,0 +1,7 @@
+venv/
+*.pyc
+__pycache__/
+*.cfg
+*.log
+*.bak
+*.tmp
