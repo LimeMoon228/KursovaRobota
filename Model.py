@@ -57,14 +57,21 @@ history = model.fit(X,
                     batch_size=100,
                     verbose=1)
 
-loss, accuracy = model.evaluate(X_validation,y_validation_onehot)
-print(accuracy)
-
 y_pred = model.predict(X_validation)
 y_pred_classes = np.argmax(y_pred, axis=1)
 y_true_classes = np.argmax(y_validation_onehot, axis=1)
 
+loss, accuracy = model.evaluate(X_validation,y_validation_onehot)
+
 matrica = confusion_matrix(y_true_classes, y_pred_classes)
+
+model.fit(X_validation
+          ,y_validation_onehot
+          ,epochs=50
+          ,batch_size=100
+          ,verbose=1)
+
+print(accuracy)
 print(matrica)
 
 model.save('model.keras')
