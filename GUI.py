@@ -5,7 +5,6 @@ from tensorflow.keras.models import load_model
 from Prepare import *
 
 my_model = load_model('model.keras')
-pipeline = Pipeline(model, "tokenize", Pipeline.DEFAULT, Pipeline.DEFAULT, "conllu")
 
 DEP_MAP1 = {0: "Підмет", 1: "Присудок", 2: "Обставина", 3: "Означення", 4: "Додаток", 5: "Прийменник", 6: "Пунктуація", 7: "Невідомо"}
 

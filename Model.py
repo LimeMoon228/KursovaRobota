@@ -5,6 +5,8 @@ import numpy as np
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, BatchNormalization, Dropout
 from tensorflow.keras.utils import to_categorical
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix
 
 def load_data(file_path):
     data = []
@@ -29,9 +31,10 @@ data = np.array(data)
 X = data
 y = np.array(read_y('celyova_zminna.txt'))
 
+X, X_validation, y, y_validation = train_test_split(X, y, test_size=0.2, random_state=42)
 
 y_onehot = to_categorical(y, num_classes=8)
-
+y_validation_onehot = to_categorical(y_validation, num_classes=8)
 
 model = Sequential([
     Dense(64, activation='relu', input_shape=(8,)),
@@ -53,5 +56,15 @@ history = model.fit(X,
                     epochs=300,
                     batch_size=100,
                     verbose=1)
+
+loss, accuracy = model.evaluate(X_validation,y_validation_onehot)
+print(accuracy)
+
+y_pred = model.predict(X_validation)
+y_pred_classes = np.argmax(y_pred, axis=1)
+y_true_classes = np.argmax(y_validation_onehot, axis=1)
+
+matrica = confusion_matrix(y_true_classes, y_pred_classes)
+print(matrica)
 
 model.save('model.keras')
