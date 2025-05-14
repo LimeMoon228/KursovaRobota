@@ -2,18 +2,11 @@ import tkinter as tk
 from tkinter import messagebox
 import numpy as np
 from tensorflow.keras.models import load_model
-from ufal.udpipe import Model, Pipeline
-from Kursova import analyze_text
+from Prepare import *
 
 my_model = load_model('model.keras')
-model_path = "ukrainian-iu-ud-2.5-191206.udpipe"
-udpipe_model = Model.load(model_path)
-pipeline = Pipeline(udpipe_model, "tokenize", Pipeline.DEFAULT, Pipeline.DEFAULT, "conllu")
+pipeline = Pipeline(model, "tokenize", Pipeline.DEFAULT, Pipeline.DEFAULT, "conllu")
 
-POS_MAP = {'NOUN': 1, 'VERB': 2, 'ADV': 3, 'ADJ': 4, 'PRON': 5, 'ADP': 6, 'CCONJ': 7, 'DET': 8, 'NUM': 9, 'PART': 10, 'PUNCT': 11, 'X': 12}
-CASE_MAP = {'Nom': 1, 'Gen': 2, 'Dat': 3, 'Acc': 4, 'Ins': 5, 'Loc': 6, 'Voc': 7, 'N/A': 0}
-NUMBER_MAP = {'Sing': 1, 'Plur': 2, 'N/A': 0}
-GENDER_MAP = {'Masc': 1, 'Fem': 2, 'Neut': 3, 'N/A': 0}
 DEP_MAP1 = {0: "Підмет", 1: "Присудок", 2: "Обставина", 3: "Означення", 4: "Додаток", 5: "Прийменник", 6: "Пунктуація", 7: "Невідомо"}
 
 def draw_results(words, classes):

@@ -3,7 +3,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = "2"
 
 import numpy as np
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense
+from tensorflow.keras.layers import Dense, BatchNormalization, Dropout
 from tensorflow.keras.utils import to_categorical
 
 def load_data(file_path):
@@ -26,7 +26,6 @@ def read_y(file_path):
 data = load_data('ukrainian_analysis.txt')
 data = np.array(data)
 
-
 X = data
 y = np.array(read_y('celyova_zminna.txt'))
 
@@ -35,18 +34,24 @@ y_onehot = to_categorical(y, num_classes=8)
 
 
 model = Sequential([
-    Dense(32, activation='relu', input_shape=(8,)),
+    Dense(64, activation='relu', input_shape=(8,)),
+    BatchNormalization(),
+    Dropout(0.1),
+    Dense(32, activation='relu'),
+    BatchNormalization(),
+    Dropout(0.1),
     Dense(16, activation='relu'),
     Dense(8, activation='softmax')
 ])
 
 model.compile(optimizer='adam',
-              loss='categorical_crossentropy')
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
 
 history = model.fit(X,
                     y_onehot,
-                    epochs=400,
-                    batch_size=32,
+                    epochs=300,
+                    batch_size=100,
                     verbose=1)
 
 model.save('model.keras')

@@ -36,7 +36,6 @@ def analyze_text(text):
             continue
 
         word_idx = int(fields[0])
-        word = fields[1]
         lemma = fields[2]
         upos = fields[3]
         feats = fields[5]
@@ -73,4 +72,3 @@ with open("text.txt", 'r', encoding='utf-8') as text:
 
 _, vectors = analyze_text(ukrainian_text)
 save_to_file(vectors)
-print("Анализ сохранён в файл 'ukrainian_analysis.txt'")
