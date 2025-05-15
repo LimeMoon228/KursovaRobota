@@ -72,10 +72,9 @@ def on_analyze():
 
     user_entry.delete(0, tk.END)
 
-    tokens, vectors = analyze_text(text)
+    words, vectors = analyze_text(text)
     new_data = np.array(vectors)
     predictions = my_model.predict(new_data)
-    words = [fields[1] for fields in tokens]
     classes = [np.argmax(pred) for pred in predictions]
     draw_results(words, classes)
 

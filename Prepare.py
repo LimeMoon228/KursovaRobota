@@ -30,12 +30,13 @@ def analyze_text(text):
 
     lines = processed.split('\n')
     tokens = [line.split('\t') for line in lines if line.strip() and not line.startswith('#')]
-
+    words = []
     for idx, fields in enumerate(tokens):
         if len(fields) < 10 or '-' in fields[0] or '.' in fields[0]:
             continue
 
         word_idx = int(fields[0])
+        words.append(fields[1])
         lemma = fields[2]
         upos = fields[3]
         feats = fields[5]
@@ -57,7 +58,7 @@ def analyze_text(text):
         vector = [word_idx, pos_code, case_code, number_code, gender_code, head, abs(head - word_idx), len(lemma)]
         word_vectors.append(vector)
 
-    return tokens, word_vectors
+    return words, word_vectors
 
 
 def save_to_file(vectors, filename="ukrainian_analysis.txt"):

@@ -25,13 +25,11 @@ def read_y(file_path):
             y = [int(line.strip())-1 for line in file if line.strip()]
         return y
 
-data = load_data('ukrainian_analysis.txt')
-data = np.array(data)
 
-X = data
+X = np.array(load_data('ukrainian_analysis.txt'))
 y = np.array(read_y('celyova_zminna.txt'))
 
-X, X_validation, y, y_validation = train_test_split(X, y, test_size=0.2, random_state=42)
+X, X_validation, y, y_validation = train_test_split(X, y, test_size=0.2, random_state=27)
 
 y_onehot = to_categorical(y, num_classes=8)
 y_validation_onehot = to_categorical(y_validation, num_classes=8)
@@ -51,11 +49,11 @@ model.compile(optimizer='adam',
               loss='categorical_crossentropy',
               metrics=['accuracy'])
 
-history = model.fit(X,
-                    y_onehot,
-                    epochs=300,
-                    batch_size=100,
-                    verbose=1)
+model.fit(X,
+          y_onehot,
+          epochs=300,
+          batch_size=100,
+          verbose=1)
 
 y_pred = model.predict(X_validation)
 y_pred_classes = np.argmax(y_pred, axis=1)
