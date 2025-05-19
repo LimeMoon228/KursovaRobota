@@ -29,7 +29,7 @@ def read_y(file_path):
 X = np.array(load_data('ukrainian_analysis.txt'))
 y = np.array(read_y('celyova_zminna.txt'))
 
-X, X_validation, y, y_validation = train_test_split(X, y, test_size=0.2, random_state=27)
+X, X_validation, y, y_validation = train_test_split(X, y, test_size=0.2, random_state=33)
 
 y_onehot = to_categorical(y, num_classes=8)
 y_validation_onehot = to_categorical(y_validation, num_classes=8)
