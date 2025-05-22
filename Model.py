@@ -59,7 +59,12 @@ y_pred = model.predict(X_validation)
 y_pred_classes = np.argmax(y_pred, axis=1)
 y_true_classes = np.argmax(y_validation_onehot, axis=1)
 
-loss, accuracy = model.evaluate(X_validation,y_validation_onehot)
+cnt = 0
+true4_pred2 = []
+
+for i in range(len(y_true_classes)):
+    if y_pred_classes[i]==y_true_classes[i]: cnt += 1
+    if y_pred_classes[i] == 2 and y_true_classes[i] == 4: true4_pred2.append(X_validation[i])
 
 matrica = confusion_matrix(y_true_classes, y_pred_classes)
 
@@ -69,7 +74,8 @@ model.fit(X_validation
           ,batch_size=100
           ,verbose=1)
 
-print(accuracy)
+print(cnt/len(y_true_classes))
 print(matrica)
-
+for i in range(0, len(true4_pred2), 3):
+    print(true4_pred2[i:i+3])
 model.save('model.keras')

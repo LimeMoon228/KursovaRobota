@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
 import numpy as np
 from tensorflow.keras.models import load_model
 from Prepare import *
@@ -58,7 +58,19 @@ def draw_results(words, classes):
         elif style == "Означення":
             for j in range(start_x, end_x, 8):
                 canvas.create_arc(j, line_y - 3, j + 8, line_y + 3, start=0, extent=180, style=tk.ARC)
-
+def load_from_file():
+    file_path = filedialog.askopenfilename(
+        title="Виберіть файл",
+        filetypes=(("Текстові файли", "*.txt"), ("Усі файли", "*.*"))
+    )
+    if file_path:
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+                user_entry.delete(0, tk.END)
+                user_entry.insert(0, content.strip())
+        except Exception as e:
+            messagebox.showerror("Помилка", f"Не вдалося прочитати файл:\n{e}")
 def on_analyze():
     text = user_entry.get().strip()
 
@@ -95,14 +107,46 @@ style_btn = {"font": ("Segoe UI", 12, "bold"),
              "padx": 20,
              "pady": 8,
              "cursor": "hand2"}
+small_green_btn = {
+    "font": ("Segoe UI", 10, "bold"),
+    "bg": "#34A853",
+    "fg": "white",
+    "activebackground": "#2C8C47",
+    "activeforeground": "white",
+    "bd": 0,
+    "padx": 10,
+    "pady": 5,
+    "cursor": "hand2"
+}
+
 
 analyze_btn = tk.Button(root, text="Аналізувати", command=on_analyze, **style_btn)
 analyze_btn.pack()
+
+load_btn = tk.Button(root, text="Завантажити з файлу", command=load_from_file, **small_green_btn)
+load_btn.pack(pady=(5, 0))
 
 canvas_frame = tk.Frame(root, bg="#e0e0e0", bd=2, relief="groove")
 canvas_frame.pack(pady=20, padx=20, fill="both", expand=True)
 
 canvas = tk.Canvas(canvas_frame, bg="white", height=100, highlightthickness=0)
 canvas.pack(fill="both", expand=True)
+
+def paste_text():
+    try:
+        clipboard = root.clipboard_get()
+        user_entry.insert(tk.INSERT, clipboard)
+    except tk.TclError:
+        pass
+
+def show_context_menu(event):
+    context_menu.tk_popup(event.x_root, event.y_root)
+
+context_menu = tk.Menu(root, tearoff=0)
+context_menu.add_command(label="Вставити", command=paste_text)
+
+user_entry.bind("<Button-3>", show_context_menu)
+
+
 
 root.mainloop()
