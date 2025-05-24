@@ -32,8 +32,6 @@ def analyze_text(text):
     tokens = [line.split('\t') for line in lines if line.strip() and not line.startswith('#')]
     words = []
     for idx, fields in enumerate(tokens):
-        if len(fields) < 10 or '-' in fields[0] or '.' in fields[0]:
-            continue
 
         word_idx = int(fields[0])
         words.append(fields[1])
