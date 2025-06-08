@@ -2,9 +2,11 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = "2"
 
 import numpy as np
+import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, BatchNormalization, Dropout
+from tensorflow.keras.layers import Dense, BatchNormalization, Dropout,LeakyReLU
 from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.callbacks import EarlyStopping
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 
@@ -29,53 +31,54 @@ def read_y(file_path):
 X = np.array(load_data('ukrainian_analysis.txt'))
 y = np.array(read_y('celyova_zminna.txt'))
 
-X, X_validation, y, y_validation = train_test_split(X, y, test_size=0.2, random_state=33)
+X, X_validation, y, y_validation = train_test_split(X, y, test_size=0.1)
 
 y_onehot = to_categorical(y, num_classes=8)
 y_validation_onehot = to_categorical(y_validation, num_classes=8)
 
 model = Sequential([
-    Dense(64, activation='relu', input_shape=(8,)),
+    Dense(128,kernel_initializer="he_normal",input_shape=(8,)),
+    LeakyReLU(alpha=0.1),
     BatchNormalization(),
-    Dropout(0.1),
-    Dense(32, activation='relu'),
+    Dropout(0.2),
+    Dense(64,kernel_initializer="he_normal",),
+    LeakyReLU(alpha=0.1),
     BatchNormalization(),
-    Dropout(0.1),
-    Dense(16, activation='relu'),
-    Dense(8, activation='softmax')
+    Dropout(0.2),
+    Dense(32,kernel_initializer="he_normal",),
+    LeakyReLU(alpha=0.1),
+    Dense(8,kernel_initializer="glorot_normal", activation='softmax')
 ])
 
 model.compile(optimizer='adam',
               loss='categorical_crossentropy',
               metrics=['accuracy'])
 
+early_stopping = EarlyStopping(
+    monitor='val_loss',
+    patience=20,
+    restore_best_weights=True
+)
+
 model.fit(X,
           y_onehot,
           epochs=300,
           batch_size=100,
-          verbose=1)
+          verbose=1,
+          validation_data=(X_validation,y_validation_onehot),
+          callbacks=[early_stopping])
 
 y_pred = model.predict(X_validation)
 y_pred_classes = np.argmax(y_pred, axis=1)
 y_true_classes = np.argmax(y_validation_onehot, axis=1)
 
 cnt = 0
-true4_pred2 = []
-
 for i in range(len(y_true_classes)):
     if y_pred_classes[i]==y_true_classes[i]: cnt += 1
-    if y_pred_classes[i] == 2 and y_true_classes[i] == 4: true4_pred2.append(X_validation[i])
 
 matrica = confusion_matrix(y_true_classes, y_pred_classes)
 
-model.fit(X_validation
-          ,y_validation_onehot
-          ,epochs=50
-          ,batch_size=100
-          ,verbose=1)
-
 print(cnt/len(y_true_classes))
 print(matrica)
-for i in range(0, len(true4_pred2), 3):
-    print(true4_pred2[i:i+3])
+
 model.save('model.keras')
